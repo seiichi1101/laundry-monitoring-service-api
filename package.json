@@ -1,0 +1,25 @@
+{
+  "name": "laundry-monitoring-service-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seiichi1101/laundry-monitoring-service-api.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/seiichi1101/laundry-monitoring-service-api/issues"
+  },
+  "homepage": "https://github.com/seiichi1101/laundry-monitoring-service-api#readme",
+  "dependencies": {
+    "serverless": "^1.25.0"
+  },
+  "devDependencies": {
+    "serverless-s3-remover": "^0.4.1"
+  }
+}

@@ -1,0 +1,89 @@
+service: laundry-monitoring-service
+provider:
+  name: aws
+  runtime: nodejs6.10
+  stage: ${opt:stage}
+  region: ap-northeast-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+       - "s3:*"
+      Resource:
+       - "arn:aws:s3:::${self:custom.config.STORAGE_NAME_${self:provider.stage}}"
+       - "arn:aws:s3:::${self:custom.config.STORAGE_NAME_${self:provider.stage}}/*"
+package:
+  individually: true
+  exclude:
+    - ./**
+custom:
+   config: ${file(config.yml)}
+   GOOGLE_CLIENT_ID: ${self:custom.config.GOOGLE_CLIENT_ID}
+   STORAGE_NAME: ${self:custom.config.STORAGE_NAME_${self:provider.stage}}
+   ORIGIN_URL: ${self:custom.config.ORIGIN_URL_${self:provider.stage}}
+
+functions:
+  authorizer:
+    handler: functions/authorizer/index.handler
+    name: ${self:service}-authorizer-${self:provider.stage}
+    environment:
+      GOOGLE_CLIENT_ID: ${self:custom.GOOGLE_CLIENT_ID}
+    package:
+      include:
+        - functions/authorizer/**
+  getPhotos:
+    handler: functions/getPhotos/index.handler
+    name: ${self:service}-getPhotos-${self:provider.stage}
+    environment:
+      STORAGE_NAME: ${self:custom.STORAGE_NAME}
+      ORIGIN_URL: ${self:custom.ORIGIN_URL}
+    package:
+      include:
+        - functions/getPhotos/**
+    events:
+      - http:
+          path: photos
+          method: get
+          integration: lambda-proxy
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+              - Pragma
+              - Cache-Control
+              - If-Modified-Since
+            allowCredentials: true
+          authorizer:
+            name: authorizer
+            type: token
+            resultTtlInSeconds: 0
+          request:
+            parameters:
+              headers:
+                authorization: true
+
+resources:
+  Resources:
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: ${self:service}-api-${self:provider.stage}
+   # S3
+    StorageBucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: ${self:custom.STORAGE_NAME}
+        # CorsConfiguration:
+        #   CorsRules:
+        #   - AllowedHeaders: ['*']
+        #     AllowedMethods: [GET]
+        #     AllowedOrigins: ${self:custom.ORIGIN_URL}
+        #     Id: ${self:service}-storage-cors
+        #     MaxAge: '1'
+
+plugins:
+  - serverless-s3-remover
